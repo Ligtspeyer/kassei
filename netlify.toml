@@ -1,0 +1,17 @@
+[build]
+command = "echo 'Static site - no build needed'"
+publish = "."
+
+[context.production]
+environment = { CONTEXT = "production" }
+
+# Redirect from theme-selector to the main page
+[[redirects]]
+from = "/"
+to = "/theme-selector.html"
+status = 200
+
+[[redirects]]
+from = "/theme-selector"
+to = "/theme-selector.html"
+status = 200

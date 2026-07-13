@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tanzverein Kassei - Farbscheme Auswahl</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f8faf6;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #0d3324;
+      text-align: center;
+    }
+    
+    p {
+      text-align: center;
+      color: #5a6c5b;
+      margin-bottom: 3rem;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .themes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 4rem;
+    }
+    
+    .theme-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+    }
+    
+    .theme-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    }
+    
+    .theme-preview {
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 1.3rem;
+    }
+    
+    .theme-green {
+      background: linear-gradient(135deg, #0d3324, #60895f);
+    }
+    
+    .theme-blue {
+      background: linear-gradient(135deg, #003d82, #0066cc);
+    }
+    
+    .theme-orange {
+      background: linear-gradient(135deg, #8B4513, #FF8C00);
+    }
+    
+    .theme-purple {
+      background: linear-gradient(135deg, #6b0080, #9d4edd);
+    }
+    
+    .theme-red {
+      background: linear-gradient(135deg, #8B0000, #DC143C);
+    }
+    
+    .theme-teal {
+      background: linear-gradient(135deg, #0b5f5f, #16a085);
+    }
+    
+    .theme-info {
+      padding: 1.5rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    
+    .theme-info h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+      color: #0d3324;
+    }
+    
+    .theme-info p {
+      font-size: 0.9rem;
+      color: #5a6c5b;
+      margin: 0;
+      text-align: left;
+    }
+    
+    .theme-button {
+      background: #0d3324;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 1rem;
+      transition: background 0.3s ease;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .theme-button:hover {
+      background: #60895f;
+    }
+    
+    .original .theme-button {
+      background: #60895f;
+    }
+    
+    .original .theme-button:hover {
+      background: #0d3324;
+    }
+    
+    footer {
+      text-align: center;
+      color: #5a6c5b;
+      padding-top: 2rem;
+      border-top: 1px solid #e9ecef;
+      margin-top: 3rem;
+    }
+    
+    footer p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎭 Tanzverein Kassei</h1>
+    <p>Wähle dein Lieblings-Farbschema aus und gib uns Feedback! Diese Demo-Versionen helfen uns, das perfekte Design für eure Website zu finden.</p>
+    
+    <div class="themes-grid">
+      <!-- Original Green -->
+      <div class="theme-card original">
+        <div class="theme-preview theme-green">Grün & Schwarz</div>
+        <div class="theme-info">
+          <div>
+            <h3>Original Grün</h3>
+            <p>Natürlich, erdend, perfekt für Outdoor-Tanz</p>
+          </div>
+          <a href="index.html" class="theme-button">Anschauen →</a>
+        </div>
+      </div>
+      
+      <!-- Blue -->
+      <div class="theme-card">
+        <div class="theme-preview theme-blue">Blau & Weiß</div>
+        <div class="theme-info">
+          <div>
+            <h3>Klassisches Blau</h3>
+            <p>Vertrauenswürdig, modern, professionell</p>
+          </div>
+          <a href="index-blue.html" class="theme-button">Anschauen →</a>
+        </div>
+      </div>
+      
+      <!-- Orange -->
+      <div class="theme-card">
+        <div class="theme-preview theme-orange">Orange & Braun</div>
+        <div class="theme-info">
+          <div>
+            <h3>Warmes Orange</h3>
+            <p>Energisch, warm, einladend</p>
+          </div>
+          <a href="index-orange.html" class="theme-button">Anschauen →</a>
+        </div>
+      </div>
+      
+      <!-- Purple -->
+      <div class="theme-card">
+        <div class="theme-preview theme-purple">Violett & Weiß</div>
+        <div class="theme-info">
+          <div>
+            <h3>Elegantes Violett</h3>
+            <p>Kreativ, künstlerisch, mystisch</p>
+          </div>
+          <a href="index-purple.html" class="theme-button">Anschauen →</a>
+        </div>
+      </div>
+      
+      <!-- Red -->
+      <div class="theme-card">
+        <div class="theme-preview theme-red">Rot & Schwarz</div>
+        <div class="theme-info">
+          <div>
+            <h3>Leidenschaftliches Rot</h3>
+            <p>Dynamisch, dramatisch, energiegeladen</p>
+          </div>
+          <a href="index-red.html" class="theme-button">Anschauen →</a>
+        </div>
+      </div>
+      
+      <!-- Teal -->
+      <div class="theme-card">
+        <div class="theme-preview theme-teal">Türkis & Dunkelgrün</div>
+        <div class="theme-info">
+          <div>
+            <h3>Frisches Türkis</h3>
+            <p>Erfrischend, beruhigend, modern</p>
+          </div>
+          <a href="index-teal.html" class="theme-button">Anschauen →</a>
+        </div>
+      </div>
+    </div>
+    
+    <footer>
+      <p>💌 Sende dein Feedback an <strong>kontakt@tanzverein-kassei.de</strong> oder +49 170 5037748</p>
+    </footer>
+  </div>
+</body>
+</html>
