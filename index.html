@@ -172,12 +172,23 @@ body {
   color: var(--text-primary);
   text-decoration: none;
   font-weight: 500;
-  transition: color 0.2s ease;
+  padding: 0.45rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .nav-links a:hover,
 .nav-links a:focus-visible {
   color: var(--green-dark);
+  background: rgba(96, 137, 95, 0.1);
+  border-color: var(--green-dark);
+}
+
+.nav-links a.active {
+  color: var(--green-dark);
+  background: rgba(96, 137, 95, 0.12);
+  border-color: var(--green-dark);
 }
 
 main {
