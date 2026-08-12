@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hormuz Crisis — FRO Price &amp; ROI Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --green: #3fb950;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --gold: #d29922;
+      --orange: #db6d28;
+      --purple: #bc8cff;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+    header h1 { font-size: 1.05rem; font-weight: 700; }
+    header p { font-size: 0.72rem; color: var(--text2); margin-top: 3px; }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 16px; }
+
+    /* ── Alert banner ── */
+    .alert {
+      background: rgba(248,81,73,.1);
+      border: 1px solid rgba(248,81,73,.35);
+      border-left: 3px solid var(--red);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      color: var(--text2);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .alert strong { color: var(--text); }
+
+    /* ── Section headers ── */
+    .section-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text2);
+      margin: 24px 0 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Metric cards ── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    @media (min-width: 560px) { .metrics { grid-template-columns: repeat(4, 1fr); } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+    }
+    .card .lbl { font-size: 0.65rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+    .card .val { font-size: 1.25rem; font-weight: 700; }
+    .card .sub { font-size: 0.68rem; color: var(--text2); margin-top: 3px; }
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+    .neu { color: var(--blue); }
+    .gold { color: var(--gold); }
+
+    /* ── Chart wrapper ── */
+    .chart-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .chart-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .chart-sub { font-size: 0.72rem; color: var(--text2); margin-bottom: 12px; }
+    canvas { width: 100% !important; }
+
+    /* status */
+    .status {
+      text-align: center;
+      padding: 10px;
+      font-size: 0.8rem;
+      color: var(--text2);
+      min-height: 32px;
+    }
+    .status.err { color: var(--red); }
+
+    /* ── Event timeline ── */
+    .timeline { margin-bottom: 16px; }
+    .event {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .event:last-child { border-bottom: none; }
+    .event-dot {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      margin-top: 2px;
+    }
+    .dot-red { background: rgba(248,81,73,.15); }
+    .dot-green { background: rgba(63,185,80,.15); }
+    .dot-blue { background: rgba(88,166,255,.15); }
+    .dot-gold { background: rgba(210,153,34,.15); }
+    .dot-orange { background: rgba(219,109,40,.15); }
+    .event-body {}
+    .event-date { font-size: 0.7rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+    .event-head { font-size: 0.88rem; font-weight: 600; margin: 2px 0 4px; }
+    .event-text { font-size: 0.78rem; color: var(--text2); line-height: 1.55; }
+    .tag {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .tag-up { background: rgba(63,185,80,.15); color: var(--green); }
+    .tag-down { background: rgba(248,81,73,.15); color: var(--red); }
+    .tag-neutral { background: rgba(88,166,255,.12); color: var(--blue); }
+
+    /* ── Mechanism box ── */
+    .mech-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--blue);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 0.8rem;
+      line-height: 1.65;
+      color: var(--text2);
+    }
+    .mech-box strong { color: var(--text); }
+    .mech-box p { margin-bottom: 8px; }
+    .mech-box p:last-child { margin-bottom: 0; }
+
+    /* ── Refiner table ── */
+    .refiner-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    @media (min-width: 600px) { .refiner-grid { grid-template-columns: repeat(2, 1fr); } }
+    .refiner-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+    .refiner-card .country {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text2);
+      margin-bottom: 4px;
+    }
+    .refiner-card .exposure-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .refiner-card .exp-num {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+    .refiner-card .exp-label { font-size: 0.72rem; color: var(--text2); }
+    .bar-bg {
+      background: var(--surface2);
+      border-radius: 4px;
+      height: 6px;
+      margin-bottom: 10px;
+    }
+    .bar-fill { height: 6px; border-radius: 4px; }
+    .refiner-card p { font-size: 0.77rem; color: var(--text2); line-height: 1.55; }
+    .refiner-card .names {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text2);
+    }
+    .names span {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 7px;
+      margin: 2px 2px 0 0;
+      font-size: 0.68rem;
+    }
+    .names .winner { border-color: var(--green); color: var(--green); }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 0.7rem;
+      color: var(--text2);
+      border-top: 1px solid var(--border);
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🛢️ Hormuz Crisis — FRO Price &amp; Refiner Exposure</h1>
+  <p>Live Yahoo Finance data · US-Israel-Iran War (Feb 28, 2026 –) · Not financial advice</p>
+</header>
+
+<div class="container">
+
+  <div class="alert">
+    <strong>⚠️ Context:</strong> On Feb 28, 2026 US/Israeli strikes killed Iran's Supreme Leader. Iran retaliated by moving to close the Strait of Hormuz. Ship traffic dropped ~70% within days; most P&amp;I insurers pulled war-risk coverage within 72 hours. An active US air campaign to reopen the strait began Mar 19. A 60-day ceasefire agreed Apr 8 collapsed in mid-June — fighting resumed. <strong>As of Aug 2026 the situation remains live and unstable.</strong><br><br>
+    <strong>Note on Euronav:</strong> Euronav was absorbed into CMB.TECH (CMBT) in 2024 — now a diversified shipping group, not a pure tanker play. A clean Frontline vs Euronav comparison is no longer meaningful; FRO is the cleanest pure-play VLCC proxy.
+  </div>
+
+  <!-- ── Metric cards ── -->
+  <div class="section-title">FRO Key Metrics (YTD 2026)</div>
+  <div class="metrics">
+    <div class="card">
+      <div class="lbl">FRO YTD Return</div>
+      <div class="val pos" id="metYTD">Loading…</div>
+      <div class="sub">vs. Jan 1 2026 close</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Current Price</div>
+      <div class="val neu" id="metPrice">—</div>
+      <div class="sub">USD (NYSE)</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Peak VLCC Rate</div>
+      <div class="val gold">$423,700</div>
+      <div class="sub">$/day — late Apr record</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Q1 Profit</div>
+      <div class="val pos">Best Since 2004</div>
+      <div class="sub">Route-lengthening driven</div>
+    </div>
+  </div>
+
+  <div class="status" id="status">⏳ Fetching FRO data from Yahoo Finance…</div>
+
+  <!-- ── Price chart ── -->
+  <div class="chart-wrap" id="chartWrap" style="display:none">
+    <div class="chart-title">FRO Price — 2026 YTD with Key War Events</div>
+    <div class="chart-sub">Daily closes · Yahoo Finance · Vertical lines = annotated events</div>
+    <canvas id="froChart"></canvas>
+  </div>
+
+  <!-- ── ROI chart ── -->
+  <div class="chart-wrap" id="roiWrap" style="display:none">
+    <div class="chart-title">$10,000 Investment — FRO vs S&amp;P 500 (SPY)</div>
+    <div class="chart-sub">Both starting Jan 1 2026</div>
+    <canvas id="roiChart"></canvas>
+  </div>
+
+  <!-- ── Event timeline ── -->
+  <div class="section-title">📅 Event Timeline &amp; Price Impact</div>
+  <div class="timeline">
+
+    <div class="event">
+      <div class="event-dot dot-red">💥</div>
+      <div class="event-body">
+        <div class="event-date">Feb 28, 2026</div>
+        <div class="event-head">US/Israel strikes kill Khamenei — Iran moves to close Hormuz <span class="tag tag-up">FRO ↑</span></div>
+        <div class="event-text">Ship traffic through the strait dropped ~70% almost immediately. Within 72 hours most P&amp;I insurers pulled war-risk coverage — arguably more impactful than physical mining. Insurance dries up, tankers won't sail, full stop. FRO begins its surge.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-blue">🛩️</div>
+      <div class="event-body">
+        <div class="event-date">Mar 19, 2026</div>
+        <div class="event-head">US air campaign to reopen the strait begins <span class="tag tag-up">FRO ↑</span></div>
+        <div class="event-text">FRO grinds higher as the market prices in a durable rate spike — the campaign signals a prolonged disruption rather than swift resolution. Rates tick up as traders price in extended Cape-route detours.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-red">🎯</div>
+      <div class="event-body">
+        <div class="event-date">Mar 26, 2026</div>
+        <div class="event-head">Israel kills Iranian naval commander overseeing blockade <span class="tag tag-up">FRO ↑</span></div>
+        <div class="event-text">Headline-driven bump. Removes tactical coordination on the Iranian side temporarily, but doesn't resolve the underlying blockade.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-orange">⚓</div>
+      <div class="event-body">
+        <div class="event-date">Apr 1, 2026</div>
+        <div class="event-head">Iran establishes Larak Island checkpoint — "toll" regime <span class="tag tag-up">FRO ↑</span></div>
+        <div class="event-text">Iran shifts from full closure to controlling/taxing transits from Larak Island. This partial-control state is actually bullish for FRO: it keeps rates elevated without full resolution. Uncertainty persists, keeping insurance withdrawn.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-blue">🕊️</div>
+      <div class="event-body">
+        <div class="event-date">Apr 8, 2026</div>
+        <div class="event-head">60-day ceasefire agreed <span class="tag tag-neutral">Mixed</span></div>
+        <div class="event-text">Would expect a dip on peace hopes, but "toll confusion" and lingering insurance withdrawal kept uncertainty — and rates — elevated. FRO sees only a brief pullback.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-green">📈</div>
+      <div class="event-body">
+        <div class="event-date">Late Apr 2026</div>
+        <div class="event-head">FRO hits 20-day high, +4.5% in a day <span class="tag tag-up">+4.5%</span></div>
+        <div class="event-text">VLCC day rates hit a record ~$423,700/day. Route-lengthening (Cape of Good Hope detours) absorbs vessel-days globally, tightening the tanker market well beyond the Gulf. FRO benefits from market-wide rate spike, not just local Hormuz risk.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-green">💰</div>
+      <div class="event-body">
+        <div class="event-date">May 22, 2026</div>
+        <div class="event-head">Q1 Earnings: FRO's strongest adjusted profit since 2004 <span class="tag tag-up">Earnings Beat</span></div>
+        <div class="event-text">Earnings letter specifically attributes gains to <em>route lengthening</em>, not direct Hormuz transits. FRO's own vessels reportedly haven't been in the strait — the entire earnings boost comes from the market-wide rate environment. Analyst consensus upgrades follow.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-red">🔥</div>
+      <div class="event-body">
+        <div class="event-date">Mid-June 2026</div>
+        <div class="event-head">60-day ceasefire collapses — tit-for-tat strikes resume <span class="tag tag-up">FRO ↑</span></div>
+        <div class="event-text">Another leg higher. Ceasefire collapse removes any residual expectation of near-term normalization. Cape-route detours lock in as the default routing for most tankers, cementing the elevated rate environment.</div>
+      </div>
+    </div>
+
+    <div class="event">
+      <div class="event-dot dot-gold">📊</div>
+      <div class="event-body">
+        <div class="event-date">Aug 2026 (Now)</div>
+        <div class="event-head">FRO up ~76–83% YTD depending on snapshot date <span class="tag tag-up">+76–83% YTD</span></div>
+        <div class="event-text">Situation remains live and unstable per CFR as of mid-July. Strait status, ceasefire negotiation, and insurance market recovery are the key variables to watch for position management.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Mechanism ── -->
+  <div class="section-title">⚙️ The Core Mechanism</div>
+  <div class="mech-box">
+    <p><strong>FRO's gain isn't simply "the strait is closed."</strong> It operates through two reinforcing channels:</p>
+    <p><strong>1. Route lengthening:</strong> Ships that can't or won't transit Hormuz take the Cape of Good Hope route (adding ~10–14 days per round trip). This consumes vessel-days without adding vessels, tightening the global tanker market — including routes nowhere near Iran. This is why VLCC rates globally surged, not just Gulf-specific ones.</p>
+    <p><strong>2. Insurance-driven capacity destruction:</strong> When P&amp;I insurers pull war-risk coverage, tankers physically capable of transiting simply won't. This is more powerful than physical obstruction because it acts immediately and globally — any tanker whose owner can't secure war-risk cover is effectively removed from the Hormuz route.</p>
+    <p><strong>Key nuance:</strong> FRO's own fleet reportedly hasn't been transiting the strait at all. Every dollar of earnings upside came from the market-wide rate environment, not from FRO assuming direct war risk. That's the clean asymmetric trade: exposure to the rate spike without exposure to the kinetic risk.</p>
+  </div>
+
+  <!-- ── Asian refiners ── -->
+  <div class="section-title">🌏 Asian Refiner Exposure — Not Uniform</div>
+  <div class="refiner-grid">
+
+    <div class="refiner-card">
+      <div class="country">🇯🇵 Japan — Most Exposed on Paper</div>
+      <div class="exposure-row">
+        <div class="exp-num neg">~90%</div>
+        <div class="exp-label">crude from Middle East<br><span style="color:var(--text2)">~75% via Hormuz</span></div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:90%;background:var(--red)"></div></div>
+      <p>Deepest buffer: ~350 million barrels onshore (~150–180 days cover). SPR releases already authorized. Structural vulnerability but significant insulation from reserves.</p>
+      <div class="names">
+        <span>Idemitsu Kosan</span>
+        <span>ENEOS Holdings</span>
+        <span>Cosmo Energy</span>
+      </div>
+    </div>
+
+    <div class="refiner-card">
+      <div class="country">🇰🇷 South Korea — Acute Real-World Impact</div>
+      <div class="exposure-row">
+        <div class="exp-num neg">~70%</div>
+        <div class="exp-label">crude + 18% LNG<br><span style="color:var(--text2)">through Hormuz</span></div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:70%;background:var(--orange)"></div></div>
+      <p>Seoul capped domestic fuel prices for the first time in ~30 years in March. S-Oil's majority owner is Saudi Aramco — an interesting natural hedge on the crude-cost side.</p>
+      <div class="names">
+        <span>SK Innovation</span>
+        <span>S-Oil (Saudi Aramco majority)</span>
+        <span>GS Caltex</span>
+        <span>Hyundai Oilbank</span>
+      </div>
+    </div>
+
+    <div class="refiner-card">
+      <div class="country">🇮🇳 India — More Resilient Than It Looks</div>
+      <div class="exposure-row">
+        <div class="exp-num gold">~40%</div>
+        <div class="exp-label">now Russian Urals<br><span style="color:var(--text2)">(pivoted during crisis)</span></div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:40%;background:var(--gold)"></div></div>
+      <p>Pivoted hard to discounted Russian Urals (~40% of imports) via temporary US waiver, plus ~30M barrels spot Russian crude bought opportunistically. <strong>Reliance Industries</strong> is the asymmetric winner: pulls in discounted Russian crude, sells refined products into tight high-margin global markets.</p>
+      <div class="names">
+        <span class="winner">★ Reliance Industries</span>
+        <span>Indian Oil Corp</span>
+        <span>BPCL</span>
+      </div>
+    </div>
+
+    <div class="refiner-card">
+      <div class="country">🇨🇳 China — Less Acute Than Headlines</div>
+      <div class="exposure-row">
+        <div class="exp-num neu">~50%</div>
+        <div class="exp-label">oil via Hormuz<br><span style="color:var(--text2)">but large strategic reserve</span></div>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:50%;background:var(--blue)"></div></div>
+      <p>Over 1.2 billion barrels of strategic reserves built up. Offsets via Russian and Kazakh pipeline crude. Paper exposure is significant but real acute exposure is much lower.</p>
+      <div class="names">
+        <span>Sinopec</span>
+        <span>PetroChina</span>
+        <span>CNOOC</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="mech-box" style="border-left-color: var(--gold)">
+    <p><strong>Crack spread logic:</strong> Crack spreads (refining margin = product price minus crude cost) widened fastest because refinery run cuts in Asia constrained <em>product</em> supply even as crude demand fell. Jet fuel and distillates were hit first. The same disruption that hurts Japanese/Korean refiners on the input side is a margin tailwind for any refiner with flexible crude sourcing — Reliance being the clearest example.</p>
+    <p><strong>CMBT note:</strong> CMB.TECH (formerly Euronav) is now a diversified fleet with ammonia/methanol vessels and dry bulk. It doesn't give clean tanker exposure. For pure VLCC proxy, FRO remains the most direct liquid name.</p>
+  </div>
+
+</div><!-- /container -->
+
+<footer>
+  Price data: Yahoo Finance (fetched live) · Event narrative: CFR, analyst commentary, news synthesis (Aug 2026)<br>
+  <strong>Not financial advice.</strong> This is fast-moving; situation depends heavily on ceasefire/strait-insurance resolution.
+</footer>
+
+<script>
+Chart.register(window['chartjs-plugin-annotation']);
+
+// Key event dates for annotations
+const EVENTS = [
+  { date: '2026-02-28', label: 'Hormuz Closure', color: '#f85149' },
+  { date: '2026-03-19', label: 'US Air Campaign', color: '#58a6ff' },
+  { date: '2026-03-26', label: 'Cmdr Killed', color: '#f85149' },
+  { date: '2026-04-01', label: 'Larak Toll', color: '#db6d28' },
+  { date: '2026-04-08', label: 'Ceasefire', color: '#3fb950' },
+  { date: '2026-05-22', label: 'Q1 Earnings', color: '#d29922' },
+  { date: '2026-06-15', label: 'CF Collapse', color: '#f85149' },
+];
+
+async function fetchTicker(ticker, range) {
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${range}`;
+  const proxies = [
+    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`
+  ];
+  for (const proxy of proxies) {
+    try {
+      const r = await fetch(proxy, { signal: AbortSignal.timeout(18000) });
+      if (!r.ok) continue;
+      const j = await r.json();
+      const raw = proxy.includes('allorigins') ? JSON.parse(j.contents) : j;
+      const res = raw?.chart?.result?.[0];
+      if (res) return res;
+    } catch(e) { continue; }
+  }
+  return null;
+}
+
+function fmtDate(ts) { return new Date(ts * 1000).toISOString().slice(0, 10); }
+
+function buildAnnotations(labels) {
+  const out = {};
+  EVENTS.forEach((ev, i) => {
+    const idx = labels.indexOf(ev.date);
+    if (idx === -1) {
+      // find nearest
+      const nearest = labels.reduce((best, d, j) => Math.abs(new Date(d) - new Date(ev.date)) < Math.abs(new Date(best.d) - new Date(ev.date)) ? { d, j } : best, { d: labels[0], j: 0 });
+      if (nearest.j === 0) return;
+    }
+    const useIdx = idx !== -1 ? idx : labels.reduce((bi, d, j) => Math.abs(new Date(d) - new Date(ev.date)) < Math.abs(new Date(labels[bi]) - new Date(ev.date)) ? j : bi, 0);
+    out[`line${i}`] = {
+      type: 'line',
+      xMin: useIdx, xMax: useIdx,
+      borderColor: ev.color,
+      borderWidth: 1.5,
+      borderDash: [4, 3],
+      label: {
+        display: true,
+        content: ev.label,
+        position: i % 2 === 0 ? '5%' : '25%',
+        backgroundColor: 'rgba(13,17,23,.85)',
+        color: ev.color,
+        font: { size: 9, weight: 'bold' },
+        padding: { x: 4, y: 2 },
+        borderRadius: 3
+      }
+    };
+  });
+  return out;
+}
+
+async function init() {
+  const status = document.getElementById('status');
+
+  const [froData, spyData] = await Promise.all([
+    fetchTicker('FRO', '1y'),
+    fetchTicker('SPY', '1y')
+  ]);
+
+  if (!froData) {
+    status.className = 'status err';
+    status.textContent = '⚠️ Could not fetch FRO data. Check your connection and try refreshing.';
+    return;
+  }
+
+  status.style.display = 'none';
+
+  const froTs = froData.timestamp;
+  const froClose = (froData.indicators.adjclose?.[0]?.adjclose ?? froData.indicators.quote[0].close);
+  const spyClose = spyData ? (spyData.indicators.adjclose?.[0]?.adjclose ?? spyData.indicators.quote[0].close) : null;
+  const spyTs = spyData ? spyData.timestamp : null;
+
+  // Filter FRO to 2026
+  const startOf2026 = new Date('2026-01-01').getTime() / 1000;
+  const froFiltered = froTs
+    .map((t, i) => ({ t, p: froClose[i] }))
+    .filter(x => x.t >= startOf2026 && x.p != null);
+
+  if (froFiltered.length < 5) {
+    status.className = 'status err';
+    status.textContent = '⚠️ Not enough 2026 data available yet for FRO. Try again later.';
+    status.style.display = 'block';
+    // Fall back to full year
+  }
+
+  const froPairs = froFiltered.length >= 5 ? froFiltered : froTs.map((t, i) => ({ t, p: froClose[i] })).filter(x => x.p != null);
+  const labels = froPairs.map(x => fmtDate(x.t));
+  const prices = froPairs.map(x => x.p);
+
+  // Metrics
+  const first = prices[0], last = prices[prices.length - 1];
+  const ytd = (last / first - 1) * 100;
+  document.getElementById('metYTD').textContent = (ytd >= 0 ? '+' : '') + ytd.toFixed(1) + '%';
+  document.getElementById('metYTD').className = 'val ' + (ytd >= 0 ? 'pos' : 'neg');
+  document.getElementById('metPrice').textContent = '$' + last.toFixed(2);
+
+  // ── Price chart ──
+  document.getElementById('chartWrap').style.display = 'block';
+  const pCtx = document.getElementById('froChart').getContext('2d');
+  new Chart(pCtx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'FRO (Frontline)',
+        data: prices,
+        borderColor: '#58a6ff',
+        backgroundColor: 'rgba(88,166,255,.07)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.15,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 12 } } },
+        tooltip: {
+          callbacks: { label: ctx => ` $${ctx.parsed.y.toFixed(2)}` }
+        },
+        annotation: { annotations: buildAnnotations(labels) }
+      },
+      scales: {
+        x: { ticks: { color: '#8b949e', maxTicksLimit: 8, font: { size: 10 } }, grid: { color: 'rgba(48,54,61,.5)' } },
+        y: {
+          ticks: { color: '#8b949e', font: { size: 10 }, callback: v => '$' + v.toFixed(0) },
+          grid: { color: 'rgba(48,54,61,.5)' }
+        }
+      }
+    }
+  });
+
+  // ── ROI chart ──
+  document.getElementById('roiWrap').style.display = 'block';
+  const INIT = 10000;
+  const froEq = prices.map(p => INIT * p / first);
+
+  // align SPY to same date range
+  let spyEq = null;
+  if (spyData && spyTs) {
+    const spyMap = {};
+    spyTs.forEach((t, i) => { if (spyClose[i] != null) spyMap[fmtDate(t)] = spyClose[i]; });
+    const spyStartPrice = spyMap[labels[0]] ?? Object.values(spyMap)[0];
+    spyEq = labels.map(d => {
+      const p = spyMap[d];
+      return p != null ? INIT * p / spyStartPrice : null;
+    });
+  }
+
+  const roiDatasets = [
+    {
+      label: 'FRO (Frontline)',
+      data: froEq,
+      borderColor: '#58a6ff',
+      backgroundColor: 'rgba(88,166,255,.07)',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.15,
+      fill: true
+    }
+  ];
+  if (spyEq) {
+    roiDatasets.push({
+      label: 'SPY (S&P 500)',
+      data: spyEq,
+      borderColor: '#d29922',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0.15,
+      fill: false
+    });
+  }
+
+  const rCtx = document.getElementById('roiChart').getContext('2d');
+  new Chart(rCtx, {
+    type: 'line',
+    data: { labels, datasets: roiDatasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { color: '#8b949e', font: { size: 12 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` $${ctx.parsed.y.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} (${((ctx.parsed.y / INIT - 1) * 100).toFixed(1)}%)`
+          }
+        },
+        annotation: { annotations: buildAnnotations(labels) }
+      },
+      scales: {
+        x: { ticks: { color: '#8b949e', maxTicksLimit: 8, font: { size: 10 } }, grid: { color: 'rgba(48,54,61,.5)' } },
+        y: {
+          ticks: {
+            color: '#8b949e', font: { size: 10 },
+            callback: v => '$' + v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+          },
+          grid: { color: 'rgba(48,54,61,.5)' }
+        }
+      }
+    }
+  });
+}
+
+init();
+</script>
+</body>
+</html>

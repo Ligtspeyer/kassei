@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ROI Strategy Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --green: #3fb950;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --gold: #d29922;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header h1 { font-size: 1.15rem; font-weight: 700; color: var(--text); }
+    header p { font-size: 0.75rem; color: var(--text2); margin-top: 2px; }
+
+    .container { max-width: 900px; margin: 0 auto; padding: 16px; }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    @media (min-width: 600px) {
+      .controls { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    label { display: block; font-size: 0.7rem; color: var(--text2); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    select, input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+    }
+
+    .btn {
+      grid-column: 1 / -1;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .status {
+      text-align: center;
+      padding: 10px;
+      font-size: 0.82rem;
+      color: var(--text2);
+      min-height: 36px;
+    }
+    .status.error { color: var(--red); }
+
+    /* Metric cards */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    @media (min-width: 600px) {
+      .metrics { grid-template-columns: repeat(4, 1fr); }
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 12px;
+    }
+    .card .label { font-size: 0.68rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .card .value { font-size: 1.3rem; font-weight: 700; }
+    .card .sub { font-size: 0.72rem; color: var(--text2); margin-top: 2px; }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .neutral { color: var(--blue); }
+
+    /* Chart */
+    .chart-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .chart-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    canvas { width: 100% !important; }
+
+    /* Signal table */
+    .signal-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .signal-section h3 { font-size: 0.85rem; font-weight: 600; margin-bottom: 12px; }
+    .signal-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .signal-table th {
+      color: var(--text2);
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+    .signal-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
+    .signal-table tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .badge-buy { background: rgba(63,185,80,.15); color: var(--green); }
+    .badge-sell { background: rgba(248,81,73,.15); color: var(--red); }
+
+    /* Strategy explanation */
+    .info-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--blue);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--text2);
+    }
+    .info-box strong { color: var(--text); }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.72rem;
+      color: var(--text2);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📈 ROI Strategy Dashboard</h1>
+  <p>Golden Cross (50/200 SMA) vs Buy &amp; Hold — Yahoo Finance Data</p>
+</header>
+
+<div class="container">
+
+  <div class="info-box">
+    <strong>Strategy: Golden Cross / Death Cross</strong><br>
+    <strong>BUY</strong> when the 50-day SMA crosses <em>above</em> the 200-day SMA (Golden Cross).<br>
+    <strong>SELL</strong> when the 50-day SMA crosses <em>below</em> the 200-day SMA (Death Cross).<br>
+    Capital is fully in when long, in cash (0% return) otherwise. Compared to simple buy &amp; hold.
+  </div>
+
+  <div class="controls">
+    <div>
+      <label>Ticker</label>
+      <input type="text" id="ticker" value="SPY" maxlength="10" style="text-transform:uppercase" />
+    </div>
+    <div>
+      <label>Period</label>
+      <select id="period">
+        <option value="5y" selected>5 Years</option>
+        <option value="10y">10 Years</option>
+        <option value="max">Max</option>
+        <option value="2y">2 Years</option>
+        <option value="1y">1 Year</option>
+      </select>
+    </div>
+    <div>
+      <label>Fast SMA</label>
+      <input type="number" id="fastSma" value="50" min="5" max="200" />
+    </div>
+    <div>
+      <label>Slow SMA</label>
+      <input type="number" id="slowSma" value="200" min="20" max="500" />
+    </div>
+    <button class="btn" id="runBtn" onclick="run()">▶ Run Backtest</button>
+  </div>
+
+  <div class="status" id="status">Enter a ticker and click Run Backtest.</div>
+
+  <div class="metrics" id="metrics" style="display:none"></div>
+
+  <div class="chart-wrap" id="chartWrap" style="display:none">
+    <div class="chart-title">Equity Curve — $10,000 Initial Investment</div>
+    <canvas id="equityChart"></canvas>
+  </div>
+
+  <div class="chart-wrap" id="priceWrap" style="display:none">
+    <div class="chart-title">Price with SMA Lines &amp; Signals</div>
+    <canvas id="priceChart"></canvas>
+  </div>
+
+  <div class="signal-section" id="signalSection" style="display:none">
+    <h3>🔁 Trade Signals</h3>
+    <div id="signalTableWrap"></div>
+  </div>
+
+</div>
+
+<footer>Data via Yahoo Finance public API (yf-data proxy). For informational purposes only — not financial advice.</footer>
+
+<script>
+let equityChartInst = null;
+let priceChartInst = null;
+
+async function fetchYahoo(ticker, period) {
+  // Yahoo Finance v8 chart endpoint
+  const interval = (period === '1y' || period === '2y') ? '1d' : '1wk';
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=${period}&events=div%2Csplit`;
+
+  const proxies = [
+    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`
+  ];
+
+  let data = null;
+  for (const proxy of proxies) {
+    try {
+      const resp = await fetch(proxy, { signal: AbortSignal.timeout(15000) });
+      if (!resp.ok) continue;
+      const json = await resp.json();
+      const raw = proxy.includes('allorigins') ? JSON.parse(json.contents) : json;
+      const result = raw?.chart?.result?.[0];
+      if (result) { data = result; break; }
+    } catch(e) { continue; }
+  }
+  return data;
+}
+
+function sma(arr, n) {
+  return arr.map((_, i) => {
+    if (i < n - 1) return null;
+    const slice = arr.slice(i - n + 1, i + 1);
+    return slice.reduce((a, b) => a + b, 0) / n;
+  });
+}
+
+function formatDate(ts) {
+  return new Date(ts * 1000).toISOString().slice(0, 10);
+}
+
+function pct(v) {
+  return (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+}
+
+function colorClass(v) {
+  return v >= 0 ? 'positive' : 'negative';
+}
+
+async function run() {
+  const btn = document.getElementById('runBtn');
+  const status = document.getElementById('status');
+  btn.disabled = true;
+
+  const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+  const period = document.getElementById('period').value;
+  const fast = parseInt(document.getElementById('fastSma').value);
+  const slow = parseInt(document.getElementById('slowSma').value);
+
+  if (!ticker) { status.textContent = 'Please enter a ticker.'; btn.disabled = false; return; }
+  if (fast >= slow) { status.textContent = 'Fast SMA must be less than Slow SMA.'; btn.disabled = false; return; }
+
+  status.className = 'status';
+  status.textContent = `⏳ Fetching ${ticker} data from Yahoo Finance…`;
+
+  try {
+    const result = await fetchYahoo(ticker, period);
+    if (!result) throw new Error('No data returned. Check ticker symbol.');
+
+    const timestamps = result.timestamp;
+    const closes = result.indicators.adjclose?.[0]?.adjclose ?? result.indicators.quote[0].close;
+
+    if (!timestamps || !closes || timestamps.length < slow + 10) {
+      throw new Error(`Not enough data. Try a longer period or different ticker.`);
+    }
+
+    // Filter out null closes
+    const pairs = timestamps.map((t, i) => [t, closes[i]]).filter(([, c]) => c != null);
+    const dates = pairs.map(p => p[0]);
+    const prices = pairs.map(p => p[1]);
+
+    const fastSma = sma(prices, fast);
+    const slowSma = sma(prices, slow);
+
+    // Backtest
+    const INITIAL = 10000;
+    let strategyEquity = [INITIAL];
+    let bhEquity = [INITIAL];
+    let inMarket = false;
+    let entryPrice = null;
+    const signals = [];
+
+    for (let i = 1; i < prices.length; i++) {
+      const prevF = fastSma[i - 1], prevS = slowSma[i - 1];
+      const curF = fastSma[i], curS = slowSma[i];
+
+      // Golden cross → BUY
+      if (prevF !== null && prevS !== null && curF !== null && curS !== null) {
+        if (!inMarket && prevF <= prevS && curF > curS) {
+          inMarket = true;
+          entryPrice = prices[i];
+          signals.push({ date: formatDate(dates[i]), type: 'BUY', price: prices[i], smaFast: curF, smaSlow: curS });
+        }
+        // Death cross → SELL
+        if (inMarket && prevF >= prevS && curF < curS) {
+          inMarket = false;
+          const tradeReturn = prices[i] / entryPrice;
+          signals.push({ date: formatDate(dates[i]), type: 'SELL', price: prices[i], smaFast: curF, smaSlow: curS, ret: (tradeReturn - 1) * 100 });
+          entryPrice = null;
+        }
+      }
+
+      const prevStratEq = strategyEquity[strategyEquity.length - 1];
+      if (inMarket) {
+        strategyEquity.push(prevStratEq * prices[i] / prices[i - 1]);
+      } else {
+        strategyEquity.push(prevStratEq);
+      }
+
+      bhEquity.push(INITIAL * prices[i] / prices[0]);
+    }
+
+    // Metrics
+    const stratFinal = strategyEquity[strategyEquity.length - 1];
+    const bhFinal = bhEquity[bhEquity.length - 1];
+    const stratROI = (stratFinal / INITIAL - 1) * 100;
+    const bhROI = (bhFinal / INITIAL - 1) * 100;
+
+    // Max drawdown strategy
+    function maxDrawdown(eq) {
+      let peak = eq[0], maxDD = 0;
+      for (const v of eq) {
+        if (v > peak) peak = v;
+        const dd = (peak - v) / peak;
+        if (dd > maxDD) maxDD = dd;
+      }
+      return maxDD * 100;
+    }
+
+    const stratDD = maxDrawdown(strategyEquity);
+    const bhDD = maxDrawdown(bhEquity);
+
+    const years = (dates[dates.length - 1] - dates[0]) / (365.25 * 86400);
+    const stratCAGR = (Math.pow(stratFinal / INITIAL, 1 / years) - 1) * 100;
+    const bhCAGR = (Math.pow(bhFinal / INITIAL, 1 / years) - 1) * 100;
+
+    // ---- Render metrics ----
+    const metricsEl = document.getElementById('metrics');
+    metricsEl.style.display = 'grid';
+    metricsEl.innerHTML = `
+      <div class="card">
+        <div class="label">Strategy ROI</div>
+        <div class="value ${colorClass(stratROI)}">${pct(stratROI)}</div>
+        <div class="sub">CAGR ${pct(stratCAGR)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Buy &amp; Hold ROI</div>
+        <div class="value ${colorClass(bhROI)}">${pct(bhROI)}</div>
+        <div class="sub">CAGR ${pct(bhCAGR)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Strategy Max DD</div>
+        <div class="value negative">-${stratDD.toFixed(1)}%</div>
+        <div class="sub">vs B&amp;H -${bhDD.toFixed(1)}%</div>
+      </div>
+      <div class="card">
+        <div class="label">Trades</div>
+        <div class="value neutral">${signals.filter(s=>s.type==='BUY').length}</div>
+        <div class="sub">${years.toFixed(1)} years of data</div>
+      </div>
+    `;
+
+    // ---- Equity chart ----
+    const chartDates = dates.map(formatDate);
+    document.getElementById('chartWrap').style.display = 'block';
+    if (equityChartInst) equityChartInst.destroy();
+    const eCtx = document.getElementById('equityChart').getContext('2d');
+    equityChartInst = new Chart(eCtx, {
+      type: 'line',
+      data: {
+        labels: chartDates,
+        datasets: [
+          {
+            label: `Golden Cross (${fast}/${slow})`,
+            data: strategyEquity,
+            borderColor: '#58a6ff',
+            backgroundColor: 'rgba(88,166,255,0.08)',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: true
+          },
+          {
+            label: 'Buy & Hold',
+            data: bhEquity,
+            borderColor: '#d29922',
+            backgroundColor: 'rgba(210,153,34,0.05)',
+            borderWidth: 2,
+            pointRadius: 0,
+            tension: 0.2,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#8b949e', font: { size: 12 } } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` $${ctx.parsed.y.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b949e', maxTicksLimit: 8, font: { size: 10 } },
+            grid: { color: 'rgba(48,54,61,0.6)' }
+          },
+          y: {
+            ticks: {
+              color: '#8b949e',
+              font: { size: 10 },
+              callback: v => '$' + v.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+            },
+            grid: { color: 'rgba(48,54,61,0.6)' }
+          }
+        }
+      }
+    });
+
+    // ---- Price + SMA chart ----
+    document.getElementById('priceWrap').style.display = 'block';
+    if (priceChartInst) priceChartInst.destroy();
+    const pCtx = document.getElementById('priceChart').getContext('2d');
+
+    // Buy/Sell point datasets
+    const buyPoints = signals.filter(s => s.type === 'BUY').map(s => ({
+      x: s.date, y: s.price
+    }));
+    const sellPoints = signals.filter(s => s.type === 'SELL').map(s => ({
+      x: s.date, y: s.price
+    }));
+
+    priceChartInst = new Chart(pCtx, {
+      type: 'line',
+      data: {
+        labels: chartDates,
+        datasets: [
+          {
+            label: 'Price',
+            data: prices,
+            borderColor: '#e6edf3',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.1,
+            order: 3
+          },
+          {
+            label: `SMA ${fast}`,
+            data: fastSma,
+            borderColor: '#3fb950',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.2,
+            order: 2
+          },
+          {
+            label: `SMA ${slow}`,
+            data: slowSma,
+            borderColor: '#f85149',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.2,
+            order: 1
+          },
+          {
+            label: 'Buy Signal',
+            type: 'scatter',
+            data: buyPoints,
+            backgroundColor: '#3fb950',
+            borderColor: '#3fb950',
+            pointRadius: 6,
+            pointStyle: 'triangle',
+            order: 0
+          },
+          {
+            label: 'Sell Signal',
+            type: 'scatter',
+            data: sellPoints,
+            backgroundColor: '#f85149',
+            borderColor: '#f85149',
+            pointRadius: 6,
+            pointStyle: 'triangle',
+            rotation: 180,
+            order: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { color: '#8b949e', font: { size: 12 } } }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#8b949e', maxTicksLimit: 8, font: { size: 10 } },
+            grid: { color: 'rgba(48,54,61,0.6)' }
+          },
+          y: {
+            ticks: { color: '#8b949e', font: { size: 10 } },
+            grid: { color: 'rgba(48,54,61,0.6)' }
+          }
+        }
+      }
+    });
+
+    // ---- Signal table ----
+    document.getElementById('signalSection').style.display = 'block';
+    const tableRows = signals.slice().reverse().slice(0, 30).map(s => `
+      <tr>
+        <td>${s.date}</td>
+        <td><span class="badge ${s.type === 'BUY' ? 'badge-buy' : 'badge-sell'}">${s.type}</span></td>
+        <td>$${s.price.toFixed(2)}</td>
+        <td>${s.type === 'SELL' && s.ret != null ? `<span class="${colorClass(s.ret)}">${pct(s.ret)}</span>` : '—'}</td>
+      </tr>
+    `).join('');
+    document.getElementById('signalTableWrap').innerHTML = `
+      <table class="signal-table">
+        <thead><tr><th>Date</th><th>Signal</th><th>Price</th><th>Trade Return</th></tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+      ${signals.length > 30 ? `<p style="font-size:.72rem;color:var(--text2);margin-top:8px;">Showing last 30 of ${signals.length} signals.</p>` : ''}
+    `;
+
+    status.className = 'status';
+    status.textContent = `✅ Backtest complete for ${ticker} — ${pairs.length} trading days analysed.`;
+
+  } catch(err) {
+    status.className = 'status error';
+    status.textContent = '⚠️ ' + (err.message || 'Failed to fetch data. Try again.');
+  }
+
+  btn.disabled = false;
+}
+
+// Auto-run on load
+window.addEventListener('load', run);
+</script>
+</body>
+</html>
